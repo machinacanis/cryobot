@@ -32,8 +32,7 @@ go get github.com/machinacanis/cryobot
 package main
 
 import (
-	cryo "github.com/machinacanis/cryobot"
-	"github.com/machinacanis/cryobot/client"
+	"github.com/machinacanis/cryobot"
 	"github.com/machinacanis/cryobot/config"
 	"github.com/sirupsen/logrus"
 )
@@ -41,13 +40,13 @@ import (
 func main() {
 	cryo.Init(config.CryoConfig{
 		LogLevel:                     logrus.InfoLevel,
-		EnableMessagePrintMiddleware: true,
 		EnableEventDebugMiddleware:   true,
 	})
 
-	client.ConnectAll()
-	select {}
+	cryo.AutoConnect()
+	cryo.Start()
 }
+
 
 ```
 
