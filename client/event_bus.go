@@ -15,10 +15,6 @@ import (
 
 var Bus *EventBus
 
-func init() {
-	Bus = NewEventBus() // 初始化事件总线
-}
-
 // EventHandler 是一个函数类型，用于处理事件
 type EventHandler func(event event.CryoEvent)
 
@@ -222,6 +218,7 @@ func AllEventTypes() []event.CryoEventType {
 		event.GroupInviteEventType,
 		event.BotConnectedEventType,
 		event.BotDisconnectedEventType,
+		event.CustomEventType,
 	}
 }
 
@@ -245,7 +242,7 @@ func Unsubscribe(eventType event.CryoEventType, handler func(event event.CryoEve
 	Bus.Unsubscribe(eventType, handler)
 }
 
-// SubscribeAll 订阅所有事件类型，不要滥用
+// SubscribeAll 订阅所有事件类型，尽量不要滥用，相当于啥事件都要走一遍这个handler，不太好说整多了会不会产生性能问题
 func SubscribeAll(handler func(event event.CryoEvent)) {
 	Bus.SubscribeAll(handler)
 }

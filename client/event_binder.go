@@ -16,6 +16,7 @@ import (
 
 // LagrangeEventBind 绑定LagrangeGo的事件到cryobot的事件总线
 func LagrangeEventBind(lc *LagrangeClient) {
+
 	log.Debugf("正在将 %d 的消息事件绑定到事件总线", lc.Client.Uin)
 	// 私聊消息
 	lc.Client.PrivateMessageEvent.Subscribe(func(client *client.QQClient, event *message.PrivateMessage) {
@@ -34,7 +35,7 @@ func LagrangeEventBind(lc *LagrangeClient) {
 				SenderNickname:  event.Sender.Nickname,
 				SenderCardname:  event.Sender.CardName,
 				IsSenderFriend:  event.Sender.IsFriend,
-				MessageElements: event.Elements,
+				MessageElements: *cryoevent.FromLagrangeMessage(event.Elements),
 			},
 			InternalId: event.InternalID,
 			ClientSeq:  event.ClientSeq,
@@ -59,7 +60,7 @@ func LagrangeEventBind(lc *LagrangeClient) {
 				SenderNickname:  event.Sender.Nickname,
 				SenderCardname:  event.Sender.CardName,
 				IsSenderFriend:  event.Sender.IsFriend,
-				MessageElements: event.Elements,
+				MessageElements: *cryoevent.FromLagrangeMessage(event.Elements),
 			},
 			InternalId: event.InternalID,
 			GroupUin:   event.GroupUin,

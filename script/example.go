@@ -10,23 +10,17 @@ example.go
 package main
 
 import (
+	cryo "github.com/machinacanis/cryobot"
 	"github.com/machinacanis/cryobot/client"
-	"github.com/machinacanis/cryobot/event"
-	"github.com/machinacanis/cryobot/log"
+	"github.com/machinacanis/cryobot/config"
 	"github.com/sirupsen/logrus"
 )
 
 func main() {
-	log.InitTextLogger(logrus.DebugLevel)
-	log.Info("欢迎使用cryobot！")
-	client.SubscribeSpecific(event.PrivateMessageEventType, func(event event.PrivateMessageEvent) {
-		// Handle private message
-		log.Info(event.ToJsonString())
-	})
-
-	client.SubscribeSpecific(event.GroupMessageEventType, func(event event.GroupMessageEvent) {
-		// Handle group message
-		log.Info(event.ToJsonString())
+	cryo.Init(config.CryoConfig{
+		LogLevel:                     logrus.InfoLevel,
+		EnableMessagePrintMiddleware: true,
+		EnableEventDebugMiddleware:   true,
 	})
 
 	client.ConnectAll()

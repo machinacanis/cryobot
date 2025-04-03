@@ -8,7 +8,10 @@ cryobot的事件结构体封装，事件的基本结构来自于LagrangGo，稍�
 
 package event
 
-import "github.com/go-json-experiment/json"
+import (
+	"github.com/LagrangeDev/LagrangeGo/message"
+	"github.com/go-json-experiment/json"
+)
 
 type CryoEventType uint32
 
@@ -44,6 +47,11 @@ type (
 		ToJsonString() string
 	}
 
+	CryoMessageEvent interface {
+		CryoEvent
+		replyDetail() (uint32, uint32, uint32, []message.IMessageElement)
+	}
+
 	// CryoBaseEvent 是CryoBot的事件总线上的事件结构体
 	CryoBaseEvent struct {
 		EventType uint32 // 事件类型，是一个枚举
@@ -63,7 +71,7 @@ type (
 		SenderCardname string // 消息发送者的备注名
 		IsSenderFriend bool   // 消息发送者是否是好友
 
-		MessageElements any // 消息元素
+		MessageElements CryoMessage // 消息元素
 	}
 
 	// PrivateMessageEvent 私聊消息事件
@@ -612,9 +620,13 @@ func (e BotDisconnectedEvent) ToJsonString() string {
 }
 
 func (e CustomEvent) ToJsonString() string {
-	res, err := json.Marshal(e)
-	if err != nil {
-		return ""
-	}
-	return string(res)
+	return string(e.ToJson())
+}
+
+func (e PrivateMessageEvent) replyDetail() (uint32, uint32, uint32, []message.IMessageElement) {
+	return e.MessageId, e.SenderUin, e.Time, e.MessageElements.ToIMessageElements()
+}
+
+func (e GroupMessageEvent) replyDetail() (uint32, uint32, uint32, []message.IMessageElement) {
+	return e.MessageId, e.SenderUin, e.Time, e.MessageElements.ToIMessageElements()
 }
