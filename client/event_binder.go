@@ -18,18 +18,27 @@ import (
 func LagrangeEventBind(lc *LagrangeClient) {
 
 	log.Debugf("正在将 %d 的消息事件绑定到事件总线", lc.Client.Uin)
+	// 断开连接
+	lc.Client.DisconnectedEvent.Subscribe(func(client *client.QQClient, event *client.DisconnectedEvent) {
+		SendBotConnectedEvent(lc)
+	})
+
 	// 私聊消息
 	lc.Client.PrivateMessageEvent.Subscribe(func(client *client.QQClient, event *message.PrivateMessage) {
 		AsyncPublish(cryoevent.PrivateMessageEvent{
 			MessageEvent: cryoevent.MessageEvent{
 				CryoBaseEvent: cryoevent.CryoBaseEvent{
-					EventType: uint32(cryoevent.PrivateMessageEventType),
-					EventID:   uuid.NewV4().String(),
-					Summary:   "PrivateMessageEvent",
-					Time:      event.Time,
+					EventType:   uint32(cryoevent.PrivateMessageEventType),
+					EventID:     uuid.NewV4().String(),
+					BotId:       lc.BotId,
+					BotNickname: lc.Nickname,
+					BotUin:      uint32(lc.Uin),
+					BotUid:      lc.Uid,
+					Platform:    lc.Platform,
+					Summary:     "PrivateMessageEvent",
+					Time:        event.Time,
 				},
 				MessageId:       event.ID,
-				SelfUin:         event.Self,
 				SenderUin:       event.Sender.Uin,
 				SenderUid:       event.Sender.UID,
 				SenderNickname:  event.Sender.Nickname,
@@ -48,13 +57,17 @@ func LagrangeEventBind(lc *LagrangeClient) {
 		AsyncPublish(cryoevent.GroupMessageEvent{
 			MessageEvent: cryoevent.MessageEvent{
 				CryoBaseEvent: cryoevent.CryoBaseEvent{
-					EventType: uint32(cryoevent.GroupMessageEventType),
-					EventID:   uuid.NewV4().String(),
-					Summary:   "GroupMessageEvent",
-					Time:      event.Time,
+					EventType:   uint32(cryoevent.GroupMessageEventType),
+					EventID:     uuid.NewV4().String(),
+					BotId:       lc.BotId,
+					BotNickname: lc.Nickname,
+					BotUin:      uint32(lc.Uin),
+					BotUid:      lc.Uid,
+					Platform:    lc.Platform,
+					Summary:     "GroupMessageEvent",
+					Time:        event.Time,
 				},
 				MessageId:       event.ID,
-				SelfUin:         client.Uin,
 				SenderUin:       event.Sender.Uin,
 				SenderUid:       event.Sender.UID,
 				SenderNickname:  event.Sender.Nickname,

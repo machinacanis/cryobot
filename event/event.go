@@ -54,17 +54,21 @@ type (
 
 	// CryoBaseEvent 是CryoBot的事件总线上的事件结构体
 	CryoBaseEvent struct {
-		EventType uint32 // 事件类型，是一个枚举
-		EventID   string // 事件ID
-		Summary   string // 事件摘要
-		Time      uint32 // 事件发生的时间戳
+		EventType   uint32 // 事件类型，是一个枚举
+		EventID     string // 事件ID
+		BotId       string // 机器人ID
+		BotNickname string // 机器人昵称
+		BotUin      uint32 // 机器人Uin
+		BotUid      string // 机器人Uid
+		Platform    string // 机器人平台
+		Summary     string // 事件摘要
+		Time        uint32 // 事件发生的时间戳
 	}
 
 	// MessageEvent 是CryoBot的消息事件结构体
 	MessageEvent struct {
 		CryoBaseEvent
 		MessageId      uint32 // 消息ID
-		SelfUin        uint32 // 接收到消息的客户端的Uin
 		SenderUin      uint32 // 消息发送者的Uin
 		SenderUid      string // 消息发送者的Uid
 		SenderNickname string // 消息发送者的昵称
@@ -251,18 +255,11 @@ type (
 	// BotConnectedEvent 机器人连接事件
 	BotConnectedEvent struct {
 		CryoBaseEvent
-		BotId    string
-		Platform string
-		Version  string
-		Uin      uint32
-		Uid      string
+		Version string
 	}
 	// BotDisconnectedEvent 机器人断开连接事件
 	BotDisconnectedEvent struct {
 		CryoBaseEvent
-		BotId string
-		Uin   uint32
-		Uid   string
 	}
 	CustomEvent struct {
 		CryoBaseEvent

@@ -12,15 +12,18 @@ import (
 	"fmt"
 	"github.com/LagrangeDev/LagrangeGo/client"
 	"github.com/LagrangeDev/LagrangeGo/client/auth"
+	"github.com/machinacanis/cryobot/cache"
 	"github.com/machinacanis/cryobot/config"
 	"github.com/machinacanis/cryobot/log"
 	"github.com/machinacanis/cryobot/utils"
 	"github.com/sirupsen/logrus"
 	"os"
+	"strconv"
 	"time"
 )
 
-var connectedClients []*LagrangeClient // 连接的客户端列表
+var ConnectedClients []*LagrangeClient // 连接的客户端列表
+var clientCache = cache.NewCryoCache("client", 64)
 
 // LagrangeClient LagrangeGo库的客户端封装，封装后可以实现更方便的多bot管理
 type LagrangeClient struct {
@@ -31,6 +34,7 @@ type LagrangeClient struct {
 	DeviceUin int
 	Uin       int
 	Uid       string
+	Nickname  string
 }
 
 // New 初始化一个新的Lagrange客户端
@@ -68,6 +72,7 @@ func (lc *LagrangeClient) New() {
 			}
 		}
 	*/
+	lc.Nickname = newNickname()  // 生成一个默认的编号昵称
 	lc.Client = qqClientInstance // 将LagrangeGo的客户端实例赋值给LagrangeClient
 }
 
@@ -133,6 +138,7 @@ func (lc *LagrangeClient) Open(botId string) error {
 	qqClientInstance.UseVersion(appInfo)
 	qqClientInstance.AddSignServer(config.Conf.SignServers...)
 	qqClientInstance.UseDevice(auth.NewDeviceInfo(lc.DeviceUin))
+	lc.Nickname = newNickname() // 生成一个默认的编号昵称
 	lc.Client = qqClientInstance
 	lc.UseSignature(sig) // 使用签名信息
 	return nil
@@ -218,10 +224,7 @@ func (lc *LagrangeClient) ProcessAfterLogin() error {
 	// 登录成功，获取签名里的信息
 	lc.Uin = int(lc.Client.Sig().Uin)
 	lc.Uid = lc.Client.Sig().UID
-	log.Infof("%d 已成功连接", lc.Uin)
-	lc.Client.DisconnectedEvent.Subscribe(func(client *client.QQClient, event *client.DisconnectedEvent) { // 订阅断开连接事件
-		log.Infof("%d 连接已断开：%v", lc.Uin, event.Message)
-	})
+	SendBotConnectedEvent(lc) // 发送登录成功事件
 	err := lc.Save()
 	if err != nil {
 		return err
@@ -246,12 +249,12 @@ func Connect(botId string) error {
 	if err != nil {
 		return err
 	}
-	log.Infof("正在连接Bot：%s (%d)", lc.BotId, lc.Uin)
+	log.Infof("正在连接 %s：%s (%d)", lc.Nickname, lc.BotId, lc.Uin)
 	err = lc.Login()
 	if err != nil {
 		return err
 	}
-	connectedClients = append(connectedClients, lc)
+	ConnectedClients = append(ConnectedClients, lc)
 	return nil
 }
 
@@ -275,13 +278,104 @@ func ConnectAll() {
 	}
 }
 
+// ConnectNew 尝试连接一个新的bot客户端
 func ConnectNew() {
 	lc := &LagrangeClient{}
 	lc.New()
+	log.Infof("正在连接 %s：%s (%d)", lc.Nickname, lc.BotId, lc.Uin)
 	err := lc.Login()
 	if err != nil {
 		log.Error("登录时出现错误：", err)
 		return
 	}
-	connectedClients = append(connectedClients, lc)
+	ConnectedClients = append(ConnectedClients, lc)
+}
+
+// GetClientByUin 根据Uin查找已连接的客户端
+func GetClientByUin(uin int) *LagrangeClient {
+	for _, c := range ConnectedClients {
+		if c.Uin == uin {
+			return c
+		}
+	}
+	return nil
+}
+
+// GetClientByBotId 根据BotId查找已连接的客户端
+func GetClientByBotId(botId string) *LagrangeClient {
+	for _, c := range ConnectedClients {
+		if c.BotId == botId {
+			return c
+		}
+	}
+	return nil
+}
+
+// GetClientByUid 根据Uid查找已连接的客户端
+func GetClientByUid(uid string) *LagrangeClient {
+	for _, c := range ConnectedClients {
+		if c.Uid == uid {
+			return c
+		}
+	}
+	return nil
+}
+
+func newNickname() string {
+	botCount := len(ConnectedClients)
+	return fmt.Sprintf("Bot%d", botCount)
+}
+
+func GetNicknameByUin(uin int) string {
+	res, err := clientCache.GetString(strconv.Itoa(uin) + "_nickname")
+	if err == nil { // 如果缓存中有昵称，则直接返回
+		return res
+	}
+	for _, c := range ConnectedClients {
+		if c.Uin == uin {
+			err := clientCache.SetString(strconv.Itoa(uin)+"_nickname", c.Nickname)
+			if err != nil {
+				// 跳过缓存错误
+				log.Warn("设置缓存时发生了异常：", err)
+			}
+			return c.Nickname
+		}
+	}
+	return ""
+}
+
+func GetNicknameByUid(uid string) string {
+	res, err := clientCache.GetString(uid + "_nickname")
+	if err == nil { // 如果缓存中有昵称，则直接返回
+		return res
+	}
+	for _, c := range ConnectedClients {
+		if c.Uid == uid {
+			err := clientCache.SetString(uid+"_nickname", c.Nickname)
+			if err != nil {
+				// 跳过缓存错误
+				log.Warn("设置缓存时发生了异常：", err)
+			}
+			return c.Nickname
+		}
+	}
+	return ""
+}
+
+func GetNicknameByBotId(botId string) string {
+	res, err := clientCache.GetString(botId + "_nickname")
+	if err == nil { // 如果缓存中有昵称，则直接返回
+		return res
+	}
+	for _, c := range ConnectedClients {
+		if c.BotId == botId {
+			err := clientCache.SetString(botId+"_nickname", c.Nickname)
+			if err != nil {
+				// 跳过缓存错误
+				log.Warn("设置缓存时发生了异常：", err)
+			}
+			return c.Nickname
+		}
+	}
+	return ""
 }
