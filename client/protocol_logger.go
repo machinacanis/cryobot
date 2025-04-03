@@ -13,18 +13,20 @@ package client
 import (
 	"fmt"
 	"github.com/machinacanis/cryobot/log"
+	"github.com/machinacanis/cryobot/utils"
 	"os"
 	"path"
 	"time"
 )
 
+var deepSkyBlue = utils.RGB("00BFFF")
 var dumpspath = "dump"
 
 var pLogger = ProtocolLogger{}
 
 type ProtocolLogger struct{}
 
-const fromProtocol = "Lagrange -> "
+var fromProtocol = deepSkyBlue + "[Lagrange] -> "
 
 func (p ProtocolLogger) Info(format string, arg ...any) {
 	log.Infof(fromProtocol+format, arg...)

@@ -100,7 +100,7 @@ func (lc *LagrangeClient) UseSignature(sig string) {
 	lc.Client.UseSig(sigInfo)
 }
 
-// Open 尝试重建已经存在的Lagrange客户端
+// Open 尝试重建已经连接过的Lagrange客户端
 func (lc *LagrangeClient) Open(botId string) error {
 	// 尝试在客户端信息文件中查找有相同id的客户端信息
 	var sig string
@@ -162,17 +162,10 @@ func (lc *LagrangeClient) Login() error {
 		if err != nil {
 			log.Warn("快速登录失败，切换到二维码登录")
 		} else {
-			// 登录成功，获取签名里的信息
-			lc.Uin = int(lc.Client.Sig().Uin)
-			lc.Uid = lc.Client.Sig().UID
-			log.Infof("%d 已成功连接", lc.Uin)
-			lc.Client.DisconnectedEvent.Subscribe(func(client *client.QQClient, event *client.DisconnectedEvent) { // 订阅断开连接事件
-				log.Infof("%d 连接已断开：%v", lc.Uin, event.Message)
-			})
-			err = lc.Save()
+			err = lc.ProcessAfterLogin()
 			if err != nil {
 				return err
-			} // 保存登录信息
+			}
 			return nil
 		}
 	}
@@ -213,6 +206,15 @@ func (lc *LagrangeClient) Login() error {
 		log.Error("login err:", err)
 		return err
 	}
+	err = lc.ProcessAfterLogin()
+	if err != nil {
+		return err
+	}
+	return nil
+}
+
+func (lc *LagrangeClient) ProcessAfterLogin() error {
+	// 处理事件
 	// 登录成功，获取签名里的信息
 	lc.Uin = int(lc.Client.Sig().Uin)
 	lc.Uid = lc.Client.Sig().UID
@@ -220,10 +222,13 @@ func (lc *LagrangeClient) Login() error {
 	lc.Client.DisconnectedEvent.Subscribe(func(client *client.QQClient, event *client.DisconnectedEvent) { // 订阅断开连接事件
 		log.Infof("%d 连接已断开：%v", lc.Uin, event.Message)
 	})
-	err = lc.Save()
+	err := lc.Save()
 	if err != nil {
 		return err
 	} // 保存登录信息
+
+	// 订阅事件
+	LagrangeEventBind(lc)
 	return nil
 }
 

@@ -2,12 +2,12 @@
 
 锐意开发中...
 
-cryobot 是一个轻量级聊天机器人开发框架，直接嵌入了协议实现  [LagrangeGo](https://github.com/LagrangeDev/LagrangeGo)  ，使部署和迁移变得无比简单。
+🧊cryobot 是一个轻量级聊天机器人开发框架，直接嵌入了协议实现  [LagrangeGo](https://github.com/LagrangeDev/LagrangeGo)  ，使部署和迁移变得简单。
 
 ## 特性
 
 - 内嵌  [LagrangeGo](https://github.com/LagrangeDev/LagrangeGo)  协议实现
-- 极简的单文件部署
+- 不出意外的话可以单文件部署
 - 良好的多Bot连接支持
 - 消息去重 / 负载均衡
 - 可启用的Web后台
