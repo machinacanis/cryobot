@@ -1,33 +1,27 @@
-/*
-
-client_history.go
-
-*/
-
-package client
+package cryobot
 
 import (
 	"github.com/go-json-experiment/json"
 	"os"
 )
 
-type LagrangeClientInfo struct {
-	BotId     string `json:"bot_id"`
+type CryoClientInfo struct {
+	Id        string `json:"id"`
 	Platform  string `json:"Platform"`
 	Version   string `json:"Version"`
-	DeviceUin int    `json:"device_num"`
+	DeviceNum int    `json:"device_num"`
 	Signature string `json:"signature"`
 	Uin       int    `json:"uin"`
 	Uid       string `json:"uid"`
 }
 
-func ReadClientInfos() ([]LagrangeClientInfo, error) {
+func ReadClientInfos() ([]CryoClientInfo, error) {
 	data, err := os.ReadFile("client_infos.json")
 	if err != nil {
 		return nil, err
 	}
 
-	var clientInfos []LagrangeClientInfo
+	var clientInfos []CryoClientInfo
 	err = json.Unmarshal(data, &clientInfos)
 	if err != nil {
 		return nil, err
@@ -36,7 +30,7 @@ func ReadClientInfos() ([]LagrangeClientInfo, error) {
 	return clientInfos, nil
 }
 
-func WriteClientInfos(clientInfos []LagrangeClientInfo) error {
+func WriteClientInfos(clientInfos []CryoClientInfo) error {
 	data, err := json.Marshal(clientInfos)
 	if err != nil {
 		return err
@@ -50,13 +44,13 @@ func WriteClientInfos(clientInfos []LagrangeClientInfo) error {
 	return nil
 }
 
-func SaveClientInfo(clientInfo LagrangeClientInfo) error {
+func SaveClientInfo(clientInfo CryoClientInfo) error {
 	// 首先尝试读取现有的客户端信息
 	clientInfos, err := ReadClientInfos()
 	if err != nil { // 读取失败，可能是文件不存在
 		if os.IsNotExist(err) {
 			// 文件不存在，创建一个新的切片
-			clientInfos = []LagrangeClientInfo{}
+			clientInfos = []CryoClientInfo{}
 		} else {
 			return err // 其他错误
 		}
@@ -64,7 +58,7 @@ func SaveClientInfo(clientInfo LagrangeClientInfo) error {
 	// 检测是否已经存在botid相同的客户端信息
 	updateFlag := false
 	for _, info := range clientInfos {
-		if info.BotId == clientInfo.BotId {
+		if info.Id == clientInfo.Id {
 			// 如果存在，则更新该信息
 			updateFlag = true
 			break
@@ -73,7 +67,7 @@ func SaveClientInfo(clientInfo LagrangeClientInfo) error {
 	if updateFlag {
 		// 如果存在，则更新该信息
 		for i, info := range clientInfos {
-			if info.BotId == clientInfo.BotId {
+			if info.Id == clientInfo.Id {
 				clientInfos[i] = clientInfo
 				break
 			}
@@ -94,11 +88,11 @@ func RemoveClientInfo(botId string) error {
 	}
 
 	// 创建一个新的切片来存储更新后的客户端信息
-	var updatedClientInfos []LagrangeClientInfo
+	var updatedClientInfos []CryoClientInfo
 
 	// 遍历现有的客户端信息，排除要删除的项
 	for _, info := range clientInfos {
-		if info.BotId != botId {
+		if info.Id != botId {
 			updatedClientInfos = append(updatedClientInfos, info)
 		}
 	}
