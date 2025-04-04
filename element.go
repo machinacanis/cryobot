@@ -1,19 +1,8 @@
-/*
-
-element.go
-
-基本上是LagrangeGo的消息元素的类型别名，作为一个快捷方式放在这里，以及方便做一些额外的封装
-
-类型定义详见 https://github.com/LagrangeDev/LagrangeGo/blob/master/message/elements.go
-
-*/
-
-package event
+package cryobot
 
 import (
 	"fmt"
 	lagrangeMessage "github.com/LagrangeDev/LagrangeGo/message"
-	"github.com/machinacanis/cryobot/log"
 	"io"
 )
 
@@ -361,7 +350,7 @@ func (m *CryoMessage) ImageIO(r io.ReadSeeker, summary ...string) *CryoMessage {
 func (m *CryoMessage) ImageFile(filePath string, summary ...string) *CryoMessage {
 	imgElement, err := lagrangeMessage.NewFileImage(filePath, summary...)
 	if err != nil {
-		log.Errorf("打开位于 %s 的图片时失败: %v", filePath, err)
+		Errorf("打开位于 %s 的图片时失败: %v", filePath, err)
 	}
 	m.Elements = append(m.Elements, &ImageElement{
 		*imgElement,

@@ -1,32 +1,13 @@
-/*
-
-default_format.go
-
-默认的日志格式化样式，包含一个暗色的和一个亮色的格式化样式，用于适配不同的终端背景色
-你可以按照这个格式化样式编写修改你自己的日志样式，或者直接使用logrus的默认格式化样式
-总之是通过实现logrus.Formatter接口来实现的
-
-*/
-
-package log
+package cryobot
 
 import (
 	"fmt"
-	"github.com/machinacanis/cryobot/utils"
 	"github.com/sirupsen/logrus"
 )
 
-var white = utils.RGB("#FFFFFF")      // 白色
-var gray = utils.RGB("#808080")       // 灰色
-var aquamarine = utils.RGB("#7FFFD4") // 浅蓝色
-var lightcyan = utils.RGB("#E0FFFF")  // 浅青色
-var turquoise = utils.RGB("#40E0D0")  // 浅绿色
-var cyan = utils.RGB("#00FFFF")       // 青色
-var red = utils.RGB("#FF0000")        // 红色
-var deepred = utils.RGB("#8B0000")    // 深红色
-var yellow = utils.RGB("#FFFF00")     // 黄色
-var purple = utils.RGB("#800080")     // 紫色
-var reset = "\033[0m"
+// 默认的日志格式化样式，包含一个暗色的和一个亮色的格式化样式，用于适配不同的终端背景色
+// 你可以按照这个格式化样式编写修改你自己的日志样式，或者直接使用logrus的默认格式化样式
+// 总之是通过实现logrus.Formatter接口来实现的
 
 // DefaultDarkFormatter 默认的暗色格式化样式
 type DefaultDarkFormatter struct{}
@@ -88,13 +69,13 @@ func (f *DefaultDarkFormatter) Format(entry *logrus.Entry) ([]byte, error) {
 	return []byte(logMsg), nil
 }
 
-var black = utils.RGB("#000000")       // 黑色
-var darkGray = utils.RGB("#A9A9A9")    // 深灰色
-var lightBlue = utils.RGB("#ADD8E6")   // 浅蓝色
-var lightGreen = utils.RGB("#90EE90")  // 浅绿色
-var darkYellow = utils.RGB("#FF7F00")  // 浅黄色
-var lightRed = utils.RGB("#FFA07A")    // 浅红色
-var lightPurple = utils.RGB("#DDA0DD") // 浅紫色
+var black = RGB("#000000")       // 黑色
+var darkGray = RGB("#A9A9A9")    // 深灰色
+var lightBlue = RGB("#ADD8E6")   // 浅蓝色
+var lightGreen = RGB("#90EE90")  // 浅绿色
+var darkYellow = RGB("#FF7F00")  // 浅黄色
+var lightRed = RGB("#FFA07A")    // 浅红色
+var lightPurple = RGB("#DDA0DD") // 浅紫色
 
 // DefaultLightFormatter 默认的亮色格式化样式
 type DefaultLightFormatter struct{}

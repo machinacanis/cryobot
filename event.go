@@ -1,12 +1,4 @@
-/*
-
-event.go
-
-cryobot的事件结构体封装，事件的基本结构来自于LagrangGo，稍微修改了一下，让它风格更统一
-
-*/
-
-package event
+package cryobot
 
 import (
 	"github.com/LagrangeDev/LagrangeGo/message"
@@ -54,15 +46,16 @@ type (
 
 	// CryoBaseEvent 是CryoBot的事件总线上的事件结构体
 	CryoBaseEvent struct {
-		EventType   uint32 // 事件类型，是一个枚举
-		EventID     string // 事件ID
-		BotId       string // 机器人ID
-		BotNickname string // 机器人昵称
-		BotUin      uint32 // 机器人Uin
-		BotUid      string // 机器人Uid
-		Platform    string // 机器人平台
-		Summary     string // 事件摘要
-		Time        uint32 // 事件发生的时间戳
+		EventType   uint32   // 事件类型，是一个枚举
+		EventId     string   // 事件ID
+		EventTags   []string // 事件标签列表
+		BotId       string   // 机器人ID
+		BotNickname string   // 机器人昵称
+		BotUin      uint32   // 机器人Uin
+		BotUid      string   // 机器人Uid
+		Platform    string   // 机器人平台
+		Summary     string   // 事件摘要
+		Time        uint32   // 事件发生的时间戳
 	}
 
 	// MessageEvent 是CryoBot的消息事件结构体
