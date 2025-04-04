@@ -104,7 +104,7 @@ func setMessagePrintMiddleware() {
 func setEventDebugMiddleware() {
 	if config.Conf.EnableEventDebugMiddleware {
 		client.Bus.UseGlobalMiddleware(func(e event.CryoEvent) event.CryoEvent {
-			log.Debug(e.ToJsonString())
+			log.Debug(e.ToJsonString()) // 输出json
 			return e
 		})
 	}
