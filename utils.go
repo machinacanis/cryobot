@@ -9,6 +9,8 @@ import (
 	"strings"
 )
 
+var botClientCount = 0
+
 // RGB 得到一个RGB颜色的ANSI颜色代码
 func RGB(rgb string) string {
 	// 如果RGB字符串以#开头则去掉
@@ -44,8 +46,7 @@ func NewUUID() string {
 
 // newNickname 生成一个新的昵称
 func newNickname() string {
-	botCount := len(connectedClients)
-	return fmt.Sprintf("Bot%d", botCount)
+	return fmt.Sprintf("Bot%d", botClientCount)
 }
 
 // GetQRCodeString 生成二维码字符串
@@ -82,4 +83,13 @@ func GetQRCodeString(content string) (result *string) {
 		str += fmt.Sprintln()
 	}
 	return &str
+}
+
+func Contains[T string | uint32 | int | CryoEventType](slice []T, item T) bool {
+	for _, v := range slice {
+		if v == item {
+			return true
+		}
+	}
+	return false
 }

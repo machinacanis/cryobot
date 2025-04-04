@@ -6,6 +6,7 @@ import (
 )
 
 func SendBotConnectedEvent(cc *CryoClient) {
+	botClientCount += 1
 	PublishAsync(BotConnectedEvent{
 		CryoBaseEvent: CryoBaseEvent{
 			EventType:   uint32(BotConnectedEventType),
@@ -24,6 +25,7 @@ func SendBotConnectedEvent(cc *CryoClient) {
 }
 
 func SendBotDisconnectedEvent(cc *CryoClient) {
+	botClientCount -= 1
 	PublishAsync(BotDisconnectedEvent{
 		CryoBaseEvent: CryoBaseEvent{
 			EventType:   uint32(BotDisconnectedEventType),

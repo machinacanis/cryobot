@@ -32,28 +32,37 @@ go get github.com/machinacanis/cryobot
 package main
 
 import (
-	"github.com/machinacanis/cryobot"
-	"github.com/machinacanis/cryobot/config"
+	cryo "github.com/machinacanis/cryobot"
 	"github.com/sirupsen/logrus"
 )
 
 func main() {
-	cryo.Init(config.CryoConfig{
-		LogLevel:                     logrus.InfoLevel,
+	bot := cryo.NewBot()
+	bot.Init(cryo.Config{
+		LogLevel:                     logrus.DebugLevel,
+		EnableMessagePrintMiddleware: true,
 		EnableEventDebugMiddleware:   true,
 	})
 
-	cryo.AutoConnect()
-	cryo.Start()
+	bot.OnType(cryo.PrivateMessageEventType).
+		Handle(func(e cryo.PrivateMessageEvent) {
+			cryo.Info("接收到了" + e.SenderNickname + "的私聊消息！")
+		}).
+		Handle(func(e cryo.GroupMessageEvent) {
+			cryo.Info("接收到了" + e.GroupName + "的群消息！")
+		}).
+		Register()
+	bot.AutoConnect()
+	bot.Start()
 }
-
-
 ```
 
 ## 开发进度
 - [x] 基本的登录及信息保存功能
 - [x] 多Bot连接支持
-- [ ] 消息处理
+- [x] 消息处理
+- [x] 消息去重
+- [x] 客户端获取
 
 ## Thanks！！！
 

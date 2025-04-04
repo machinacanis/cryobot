@@ -9,8 +9,6 @@ import (
 	"time"
 )
 
-var connectedClients []*CryoClient
-
 // CryoClient cryobot的Bot客户端封装
 type CryoClient struct {
 	Id             string

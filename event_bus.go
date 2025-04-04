@@ -197,14 +197,8 @@ func AddMiddleware(eventType CryoEventType, middleware ...Middleware) {
 
 // AddGlobalMiddleware 为所有事件类型添加中间件
 func AddGlobalMiddleware(middleware ...Middleware) {
-	Bus.middlewareMutex.Lock()
-	defer Bus.middlewareMutex.Unlock()
-
-	for eventType := range Bus.subscriber {
-		if _, exists := Bus.middleware[eventType]; !exists {
-			Bus.middleware[eventType] = []Middleware{}
-		}
-		Bus.middleware[eventType] = append(Bus.middleware[eventType], middleware...)
+	for _, eventType := range AllEventTypes() {
+		AddMiddleware(eventType, middleware...)
 	}
 }
 
@@ -264,4 +258,32 @@ func containsAllTags(handlerTags, tags []string) bool {
 		}
 	}
 	return true
+}
+
+// AllEventTypes 返回所有可用的事件类型
+func AllEventTypes() []CryoEventType {
+	return []CryoEventType{
+		PrivateMessageEventType,
+		GroupMessageEventType,
+		TempMessageEventType,
+		NewFriendRequestEventType,
+		NewFriendEventType,
+		FriendRecallEventType,
+		FriendRenameEventType,
+		FriendPokeEventType,
+		GroupMemberPermissionUpdatedEventType,
+		GroupNameUpdatedEventType,
+		GroupMuteEventType,
+		GroupRecallEventType,
+		GroupMemberJoinRequestEventType,
+		GroupMemberIncreaseEventType,
+		GroupMemberDecreaseEventType,
+		GroupDigestEventType,
+		GroupReactionEventType,
+		GroupMemberSpecialTitleUpdatedEventType,
+		GroupInviteEventType,
+		BotConnectedEventType,
+		BotDisconnectedEventType,
+		CustomEventType,
+	}
 }
