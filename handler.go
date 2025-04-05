@@ -17,9 +17,11 @@ func TypedWrapper[T CryoEvent](handler func(T)) func(CryoEvent) {
 
 // Handler cryobot的事件处理器
 type Handler struct {
-	Tags          []string        // 事件处理器的标签，这些标签会被带入这个事件处理器生成的订阅中
-	Subscriptions []Subscription  // 将被用于订阅的事件处理函数列表
-	MatchingTypes []CryoEventType // 支持处理的事件类型
+	Tags               []string        // 事件处理器的标签，这些标签会被带入这个事件处理器生成的订阅中
+	Subscriptions      []Subscription  // 将被用于订阅的事件处理函数列表
+	Middlewares        []Middleware    // 中间件订阅列表
+	MessageMiddlewares []Middleware    // 消息中间件订阅列表
+	MatchingTypes      []CryoEventType // 支持处理的事件类型
 }
 
 // AddTags 用于向事件处理器添加标签
@@ -41,6 +43,54 @@ func (h *Handler) GetTags() []string {
 // SetTags 用于直接覆盖设置事件处理器的标签
 func (h *Handler) SetTags(tags ...string) *Handler {
 	h.Tags = tags
+	return h
+}
+
+func (h *Handler) AddMatchingTypes(types ...CryoEventType) *Handler {
+	// 将匹配的事件类型添加到事件处理器
+	for _, et := range types {
+		if !Contains(h.MatchingTypes, et) {
+			h.MatchingTypes = append(h.MatchingTypes, et)
+		}
+	}
+	return h
+}
+
+// GetMatchingTypes 返回事件处理器的匹配事件类型
+func (h *Handler) GetMatchingTypes() []CryoEventType {
+	return h.MatchingTypes
+}
+
+// SetMatchingTypes 用于直接覆盖设置事件处理器的匹配事件类型
+func (h *Handler) SetMatchingTypes(types ...CryoEventType) *Handler {
+	h.MatchingTypes = types
+	return h
+}
+
+// AddMiddlewares 用于向事件处理器添加中间件
+func (h *Handler) AddMiddlewares(middlewares ...Middleware) *Handler {
+	// 将中间件添加到事件处理器
+	h.Middlewares = append(h.Middlewares, middlewares...)
+	return h
+}
+
+func (h *Handler) ClearMiddlewares() *Handler {
+	// 清空事件处理器的中间件
+	h.Middlewares = []Middleware{}
+	return h
+}
+
+// AddMessageMiddlewares 用于向事件处理器添加消息中间件
+func (h *Handler) AddMessageMiddlewares(middlewares ...Middleware) *Handler {
+	// 将消息中间件添加到事件处理器
+	h.MessageMiddlewares = append(h.MessageMiddlewares, middlewares...)
+	return h
+}
+
+// ClearMessageMiddlewares 清空事件处理器的消息中间件
+func (h *Handler) ClearMessageMiddlewares() *Handler {
+	// 清空事件处理器的消息中间件
+	h.MessageMiddlewares = []Middleware{}
 	return h
 }
 
@@ -202,10 +252,21 @@ func (h *Handler) Handle(handler interface{}) *Handler {
 			HandlerType: CustomEventType,
 		})
 	default:
-		Warn("传入了不支持的处理函数！")
+		Warn("传入了不支持的事件类型！")
 	}
 	return h
+}
 
+// HandleMessage 用于向事件处理器添加消息处理函数
+func (h *Handler) HandleMessage(handler func(MessageEvent)) *Handler {
+	h.MessageMiddlewares = append(h.MessageMiddlewares, func(e CryoEvent) CryoEvent {
+		// 尝试对事件进行类型断言
+		if msgEvent, ok := e.(CryoMessageEvent); ok {
+			handler(msgEvent.GetMessageEvent())
+		}
+		return e
+	})
+	return h
 }
 
 // Register 将当前的事件处理器注册到事件总线
@@ -216,16 +277,31 @@ func (h *Handler) Register() {
 		// 如果没有匹配的事件类型，则注册所有的处理函数
 		for _, sub := range h.Subscriptions {
 			sub.HandlerId = Subscribe(sub.HandlerType, sub.HandlerFunc, h.Tags...)
-			println()
+		}
+		// 注册中间件
+		AddGlobalMiddleware(h.Middlewares...)
+		// 注册消息中间件
+		for _, et := range messageEventTypes {
+			AddMiddleware(et, h.MessageMiddlewares...)
 		}
 	} else {
 		// 如果有匹配的事件类型，则只注册拥有匹配的类型的处理函数
-		for _, sub := range h.Subscriptions {
-			for _, matchingType := range h.MatchingTypes {
+		for _, matchingType := range h.MatchingTypes { // 遍历所有匹配的事件类型
+			// 订阅所有拥有匹配的事件类型的处理函数
+			for _, sub := range h.Subscriptions {
 				if sub.HandlerType == matchingType {
 					sub.HandlerId = Subscribe(sub.HandlerType, sub.HandlerFunc, h.Tags...)
 				}
 			}
+			// 注册中间件
+			AddMiddleware(matchingType, h.Middlewares...)
+			// 注册消息中间件，只有同时是匹配的事件类型和消息事件类型才会注册
+			for _, et := range messageEventTypes {
+				if et == matchingType {
+					AddMiddleware(et, h.MessageMiddlewares...)
+				}
+			}
+
 		}
 	}
 }

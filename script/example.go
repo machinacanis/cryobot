@@ -13,14 +13,14 @@ func main() {
 		EnableEventDebugMiddleware:   true,
 	})
 
-	bot.OnType(cryo.PrivateMessageEventType).
-		Handle(func(e cryo.PrivateMessageEvent) {
-			cryo.Info("接收到了" + e.SenderNickname + "的私聊消息！")
-		}).
-		Handle(func(e cryo.GroupMessageEvent) {
-			cryo.Info("接收到了" + e.GroupName + "的群消息！")
+	bot.OnMessage().
+		HandleMessage(func(e cryo.MessageEvent) {
+			if e.GroupUin == 941419619 {
+				bot.Reply(e, "你说的对")
+			}
 		}).
 		Register()
+
 	bot.AutoConnect()
 	bot.Start()
 }

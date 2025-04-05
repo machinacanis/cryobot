@@ -8,7 +8,9 @@ import (
 type CryoEventType uint32
 
 const (
-	PrivateMessageEventType                 CryoEventType = iota // 私聊消息事件类型
+	BaseEventType                           CryoEventType = iota // 基础事件类型
+	MessageEventType                                             // 消息事件类型
+	PrivateMessageEventType                                      // 私聊消息事件类型
 	GroupMessageEventType                                        // 群消息事件类型
 	TempMessageEventType                                         // 临时消息事件类型
 	NewFriendRequestEventType                                    // 新好友请求事件类型
@@ -37,15 +39,17 @@ type (
 		Type() CryoEventType
 		ToJson() []byte
 		ToJsonString() string
+		GetBaseEvent() BaseEvent
 	}
 
 	CryoMessageEvent interface {
 		CryoEvent
+		GetMessageEvent() MessageEvent
 		replyDetail() (uint32, uint32, uint32, []message.IMessageElement)
 	}
 
-	// CryoBaseEvent 是CryoBot的事件总线上的事件结构体
-	CryoBaseEvent struct {
+	// BaseEvent 是CryoBot的事件总线上的事件结构体
+	BaseEvent struct {
 		EventType   uint32   // 事件类型，是一个枚举
 		EventId     string   // 事件ID
 		EventTags   []string // 事件标签列表
@@ -60,13 +64,15 @@ type (
 
 	// MessageEvent 是CryoBot的消息事件结构体
 	MessageEvent struct {
-		CryoBaseEvent
+		BaseEvent
 		MessageId      uint32 // 消息ID
 		SenderUin      uint32 // 消息发送者的Uin
 		SenderUid      string // 消息发送者的Uid
 		SenderNickname string // 消息发送者的昵称
 		SenderCardname string // 消息发送者的备注名
 		IsSenderFriend bool   // 消息发送者是否是好友
+		GroupUin       uint32 // 群号
+		GroupName      string // 群名称
 
 		MessageElements CryoMessage // 消息元素
 	}
@@ -82,19 +88,14 @@ type (
 	GroupMessageEvent struct {
 		MessageEvent
 		InternalId uint32 // 内部ID
-		GroupUin   uint32 // 群号
-		GroupName  string // 群名称
 	}
 	// TempMessageEvent 临时消息事件
 	TempMessageEvent struct {
 		MessageEvent
-		InternalId    uint32 // 内部ID
-		FromGroupUin  uint32 // 群号
-		FromGroupName string // 群名称
 	}
 	// NewFriendRequestEvent 新好友请求事件
 	NewFriendRequestEvent struct {
-		CryoBaseEvent
+		BaseEvent
 		Uin      uint32
 		Uid      string
 		Nickname string
@@ -103,7 +104,7 @@ type (
 	}
 	// NewFriendEvent 新好友事件
 	NewFriendEvent struct {
-		CryoBaseEvent
+		BaseEvent
 		Uin      uint32
 		Uid      string
 		Nickname string
@@ -111,7 +112,7 @@ type (
 	}
 	// FriendRecallEvent 好友撤回事件
 	FriendRecallEvent struct {
-		CryoBaseEvent
+		BaseEvent
 		Uin     uint32
 		Uid     string
 		Seqence uint64
@@ -119,7 +120,7 @@ type (
 	}
 	// FriendRenameEvent 好友改名事件
 	FriendRenameEvent struct {
-		CryoBaseEvent
+		BaseEvent
 		IsSelf   bool
 		Uin      uint32
 		Uid      string
@@ -127,7 +128,7 @@ type (
 	}
 	// FriendPokeEvent 好友戳一戳事件
 	FriendPokeEvent struct {
-		CryoBaseEvent
+		BaseEvent
 		SenderUin uint32
 		TargetUin uint32
 		Suffix    string
@@ -135,7 +136,7 @@ type (
 	}
 	// GroupMemberPermissionUpdatedEvent 群成员权限变更事件
 	GroupMemberPermissionUpdatedEvent struct {
-		CryoBaseEvent
+		BaseEvent
 		GroupUin uint32
 		Uin      uint32
 		Uid      string
@@ -143,7 +144,7 @@ type (
 	}
 	// GroupNameUpdatedEvent 群名称变更事件
 	GroupNameUpdatedEvent struct {
-		CryoBaseEvent
+		BaseEvent
 		GroupUin uint32
 		Uin      uint32
 		Uid      string
@@ -151,7 +152,7 @@ type (
 	}
 	// GroupMuteEvent 群禁言事件
 	GroupMuteEvent struct {
-		CryoBaseEvent
+		BaseEvent
 		GroupUin    uint32
 		OperatorUin uint32
 		OperatorUid string
@@ -162,7 +163,7 @@ type (
 	}
 	// GroupRecallEvent 群撤回事件
 	GroupRecallEvent struct {
-		CryoBaseEvent
+		BaseEvent
 		GroupUin    uint32
 		OperatorUin uint32
 		OperatorUid string
@@ -173,7 +174,7 @@ type (
 	}
 	// GroupMemberJoinRequestEvent 群成员入群请求事件
 	GroupMemberJoinRequestEvent struct {
-		CryoBaseEvent
+		BaseEvent
 		GroupUin       uint32
 		SenderUin      uint32
 		SenderUid      string
@@ -185,7 +186,7 @@ type (
 	}
 	// GroupMemberIncreaseEvent 群成员增加事件
 	GroupMemberIncreaseEvent struct {
-		CryoBaseEvent
+		BaseEvent
 		GroupUin   uint32
 		Uin        uint32
 		Uid        string
@@ -195,7 +196,7 @@ type (
 	}
 	// GroupMemberDecreaseEvent 群成员减少事件
 	GroupMemberDecreaseEvent struct {
-		CryoBaseEvent
+		BaseEvent
 		GroupUin uint32
 		Uin      uint32
 		Uid      string
@@ -203,7 +204,7 @@ type (
 	}
 	// GroupDigestEvent 群精华消息事件
 	GroupDigestEvent struct {
-		CryoBaseEvent
+		BaseEvent
 		GroupUin         uint32
 		MessageId        string
 		InternalId       uint32
@@ -217,7 +218,7 @@ type (
 	}
 	// GroupReactionEvent 群消息表态事件
 	GroupReactionEvent struct {
-		CryoBaseEvent
+		BaseEvent
 		GroupUin  uint32
 		Uin       uint32
 		Uid       string
@@ -229,7 +230,7 @@ type (
 	}
 	// GroupMemberSpecialTitleUpdated 群成员特殊头衔变更事件
 	GroupMemberSpecialTitleUpdated struct {
-		CryoBaseEvent
+		BaseEvent
 		GroupUin uint32
 		Uin      uint32
 		Uid      string
@@ -237,7 +238,7 @@ type (
 	}
 	// GroupInviteEvent 加群邀请事件
 	GroupInviteEvent struct {
-		CryoBaseEvent
+		BaseEvent
 		GroupUin        uint32
 		GroupName       string
 		InviterUin      uint32
@@ -247,19 +248,35 @@ type (
 	}
 	// BotConnectedEvent 机器人连接事件
 	BotConnectedEvent struct {
-		CryoBaseEvent
+		BaseEvent
 		Version string
 	}
 	// BotDisconnectedEvent 机器人断开连接事件
 	BotDisconnectedEvent struct {
-		CryoBaseEvent
+		BaseEvent
 	}
 	CustomEvent struct {
-		CryoBaseEvent
+		BaseEvent
 		summury string      // 摘要
 		payload interface{} // 负载
 	}
 )
+
+func (e BaseEvent) GetBaseEvent() BaseEvent {
+	return e
+}
+
+func (e MessageEvent) GetMessageEvent() MessageEvent {
+	return e
+}
+
+func (e BaseEvent) Type() CryoEventType {
+	return BaseEventType
+}
+
+func (e MessageEvent) Type() CryoEventType {
+	return MessageEventType
+}
 
 func (e PrivateMessageEvent) Type() CryoEventType {
 	return PrivateMessageEventType
@@ -347,6 +364,22 @@ func (e BotDisconnectedEvent) Type() CryoEventType {
 
 func (e CustomEvent) Type() CryoEventType {
 	return CustomEventType
+}
+
+func (e BaseEvent) ToJson() []byte {
+	res, err := json.Marshal(e)
+	if err != nil {
+		return nil
+	}
+	return res
+}
+
+func (e MessageEvent) ToJson() []byte {
+	res, err := json.Marshal(e)
+	if err != nil {
+		return nil
+	}
+	return res
 }
 
 func (e PrivateMessageEvent) ToJson() []byte {
@@ -525,6 +558,14 @@ func (e CustomEvent) ToJson() []byte {
 	return res
 }
 
+func (e BaseEvent) ToJsonString() string {
+	return string(e.ToJson())
+}
+
+func (e MessageEvent) ToJsonString() string {
+	return string(e.ToJson())
+}
+
 func (e PrivateMessageEvent) ToJsonString() string {
 	return string(e.ToJson())
 }
@@ -611,6 +652,10 @@ func (e BotDisconnectedEvent) ToJsonString() string {
 
 func (e CustomEvent) ToJsonString() string {
 	return string(e.ToJson())
+}
+
+func (e MessageEvent) replyDetail() (uint32, uint32, uint32, []message.IMessageElement) {
+	return e.MessageId, e.SenderUin, e.Time, e.MessageElements.ToIMessageElements()
 }
 
 func (e PrivateMessageEvent) replyDetail() (uint32, uint32, uint32, []message.IMessageElement) {

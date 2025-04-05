@@ -11,14 +11,14 @@ import (
 
 // CryoClient cryobot的Bot客户端封装
 type CryoClient struct {
-	Id             string
-	LagrangeClient *client.QQClient
-	Platform       string
-	Version        string
-	DeviceNum      int
-	Uin            int
-	Uid            string
-	Nickname       string
+	Id        string
+	Client    *client.QQClient
+	Platform  string
+	Version   string
+	DeviceNum int
+	Uin       int
+	Uid       string
+	Nickname  string
 
 	initFlag bool // 是否初始化完成
 }
@@ -41,12 +41,12 @@ func (c *CryoClient) Init() {
 	}
 
 	appInfo := auth.AppList[c.Platform][c.Version]
-	c.LagrangeClient = client.NewClient(0, "")
-	c.LagrangeClient.SetLogger(pLogger) // 替换日志记录器，详见client/protocol_logger.go以及log/logger.go
-	c.LagrangeClient.UseVersion(appInfo)
-	c.LagrangeClient.AddSignServer(conf.SignServers...)
+	c.Client = client.NewClient(0, "")
+	c.Client.SetLogger(pLogger) // 替换日志记录器，详见client/protocol_logger.go以及log/logger.go
+	c.Client.UseVersion(appInfo)
+	c.Client.AddSignServer(conf.SignServers...)
 	c.DeviceNum = RandomDeviceNumber()
-	c.LagrangeClient.UseDevice(auth.NewDeviceInfo(c.DeviceNum))
+	c.Client.UseDevice(auth.NewDeviceInfo(c.DeviceNum))
 	c.Nickname = newNickname() // 生成一个默认的编号昵称
 
 	c.initFlag = true
@@ -66,8 +66,8 @@ func (c *CryoClient) Rebuild(clientInfo CryoClientInfo) bool {
 	c.Uin = clientInfo.Uin
 	c.Uid = clientInfo.Uid
 	sig = clientInfo.Signature
-	c.LagrangeClient.UseDevice(auth.NewDeviceInfo(c.DeviceNum))
-	c.LagrangeClient.UseVersion(auth.AppList[c.Platform][c.Version])
+	c.Client.UseDevice(auth.NewDeviceInfo(c.DeviceNum))
+	c.Client.UseVersion(auth.AppList[c.Platform][c.Version])
 	c.UseSignature(sig) // 使用指定的签名信息
 	return true
 }
@@ -89,7 +89,7 @@ func (c *CryoClient) Save() error {
 
 // GetSignature 获取当前客户端的签名信息
 func (c *CryoClient) GetSignature() string {
-	data, err := c.LagrangeClient.Sig().Marshal()
+	data, err := c.Client.Sig().Marshal()
 	if err != nil {
 		Error("序列化签名时出现错误：", err)
 		return ""
@@ -113,13 +113,13 @@ func (c *CryoClient) UseSignature(sig string) {
 		Error("反序列化签名时出现错误：", err)
 		return
 	}
-	c.LagrangeClient.UseSig(sigInfo)
+	c.Client.UseSig(sigInfo)
 }
 
 func (c *CryoClient) AfterLogin() {
 	// 登录成功后，保存签名
-	c.Uin = int(c.LagrangeClient.Sig().Uin)
-	c.Uid = c.LagrangeClient.Sig().UID
+	c.Uin = int(c.Client.Sig().Uin)
+	c.Uid = c.Client.Sig().UID
 	SendBotConnectedEvent(c)       // 发送登录成功事件
 	if conf.EnableClientAutoSave { // 如果启用了自动保存
 		err := c.Save()
@@ -134,7 +134,7 @@ func (c *CryoClient) AfterLogin() {
 
 // GetQRCode 获取二维码信息
 func (c *CryoClient) GetQRCode() ([]byte, string, error) {
-	code, res, err := c.LagrangeClient.FetchQRCodeDefault()
+	code, res, err := c.Client.FetchQRCodeDefault()
 	// 这里获取到两个参数，第一个是字节形式的二维码图片，第二个是二维码指向的链接
 	return code, res, err
 }
@@ -159,9 +159,9 @@ func (c *CryoClient) PrintQRCode(url string) {
 
 // SignatureLogin 使用签名快速登录
 func (c *CryoClient) SignatureLogin() (ok bool) {
-	sig := c.LagrangeClient.Sig()
+	sig := c.Client.Sig()
 	if sig != nil {
-		err := c.LagrangeClient.FastLogin()
+		err := c.Client.FastLogin()
 		if err == nil {
 			// 通过保存的签名快速登录成功
 			c.AfterLogin()
@@ -194,7 +194,7 @@ func (c *CryoClient) QRCodeLogin() bool {
 func (c *CryoClient) watingForLoginResult() bool {
 	//轮询登录状态
 	for {
-		retCode, err := c.LagrangeClient.GetQRCodeResult()
+		retCode, err := c.Client.GetQRCodeResult()
 		if err != nil {
 			Error("获取二维码登录结果时出现错误：", err)
 			return false
@@ -209,10 +209,119 @@ func (c *CryoClient) watingForLoginResult() bool {
 		}
 		break
 	}
-	_, err := c.LagrangeClient.QRCodeLogin()
+	_, err := c.Client.QRCodeLogin()
 	if err != nil {
 		Error("二维码登录时出现错误：", err)
 		return false
 	}
 	return true
+}
+
+// SendPrivateMessage 发送私聊消息
+func (c *CryoClient) SendPrivateMessage(userUin uint32, msg *CryoMessage) (ok bool, messageId uint32) {
+	// 发送私聊消息
+	message, err := c.Client.SendPrivateMessage(userUin, msg.ToIMessageElements())
+	if err != nil {
+		Errorf("向用户 %d 发送消息时出现错误：%v", userUin, err)
+		return false, 0
+	}
+	return true, message.ID
+}
+
+// SendGroupMessage 发送群消息
+func (c *CryoClient) SendGroupMessage(groupUin uint32, msg *CryoMessage) (ok bool, messageId uint32) {
+	// 发送群消息
+	message, err := c.Client.SendGroupMessage(groupUin, msg.ToIMessageElements())
+	if err != nil {
+		Errorf("向群 %d 发送消息时出现错误：%v", groupUin, err)
+		return false, 0
+	}
+	return true, message.ID
+}
+
+// SendTempMessage 发送临时消息
+func (c *CryoClient) SendTempMessage(groupUin, userUin uint32, msg *CryoMessage) (ok bool, messageId uint32) {
+	// 发送临时消息
+	message, err := c.Client.SendTempMessage(groupUin, userUin, msg.ToIMessageElements())
+	if err != nil {
+		Errorf("向与用户 %d 的临时会话发送消息时出现错误：%v", groupUin, err)
+		return false, 0
+	}
+	return true, message.ID
+}
+
+func (c *CryoClient) Send(event CryoMessageEvent, args ...interface{}) (ok bool, messageId uint32) {
+	// 处理消息内容
+	m := ProcessMessageContent(args...)
+	// 根据传入的事件来发送消息
+	switch event.Type() {
+	case PrivateMessageEventType:
+		// 断言为私聊消息事件
+		if msg, ok := event.(PrivateMessageEvent); ok {
+			return c.SendPrivateMessage(msg.SenderUin, m)
+		}
+	case GroupMessageEventType:
+		// 断言为群消息事件
+		if msg, ok := event.(GroupMessageEvent); ok {
+			return c.SendGroupMessage(msg.GroupUin, m)
+		}
+	case TempMessageEventType:
+		// 断言为临时消息事件
+		if msg, ok := event.(TempMessageEvent); ok {
+			return c.SendTempMessage(msg.GroupUin, msg.SenderUin, m)
+		}
+	case MessageEventType:
+		// 断言为统一消息事件
+		if msg, ok := event.(MessageEvent); ok {
+			// 通过tag来判断消息类型
+			if Contains(msg.EventTags, "private_message") {
+				return c.SendPrivateMessage(msg.SenderUin, m)
+			} else if Contains(msg.EventTags, "group_message") {
+				return c.SendGroupMessage(msg.GroupUin, m)
+			} else if Contains(msg.EventTags, "temp_message") {
+				return c.SendTempMessage(msg.GroupUin, msg.SenderUin, m)
+			}
+		}
+	default:
+		Error("发送消息时传入了不支持的消息事件")
+	}
+	return false, 0
+}
+
+func (c *CryoClient) Reply(event CryoMessageEvent, args ...interface{}) (ok bool, messageId uint32) {
+	// 处理消息内容
+	m := BuildMessage().Reply(event).Add(*ProcessMessageContent(args...))
+	// 根据传入的事件来发送消息
+	switch event.Type() {
+	case PrivateMessageEventType:
+		// 断言为私聊消息事件
+		if msg, ok := event.(PrivateMessageEvent); ok {
+			return c.SendPrivateMessage(msg.SenderUin, m.Reply(msg))
+		}
+	case GroupMessageEventType:
+		// 断言为群消息事件
+		if msg, ok := event.(GroupMessageEvent); ok {
+			return c.SendGroupMessage(msg.GroupUin, m.Reply(msg))
+		}
+	case TempMessageEventType:
+		// 断言为临时消息事件
+		if msg, ok := event.(TempMessageEvent); ok {
+			return c.SendTempMessage(msg.GroupUin, msg.SenderUin, m.Reply(msg))
+		}
+	case MessageEventType:
+		// 断言为统一消息事件
+		if msg, ok := event.(MessageEvent); ok {
+			// 通过tag来判断消息类型
+			if Contains(msg.EventTags, "private_message") {
+				return c.SendPrivateMessage(msg.SenderUin, m.Reply(msg))
+			} else if Contains(msg.EventTags, "group_message") {
+				return c.SendGroupMessage(msg.GroupUin, m.Reply(msg))
+			} else if Contains(msg.EventTags, "temp_message") {
+				return c.SendTempMessage(msg.GroupUin, msg.SenderUin, m.Reply(msg))
+			}
+		}
+	default:
+		Error("发送消息时传入了不支持的消息事件")
+	}
+	return false, 0
 }

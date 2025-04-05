@@ -192,6 +192,13 @@ func LagrangeMessageToString(elements []lagrangeMessage.IMessageElement) string 
 	return result
 }
 
+// Add 将一个CryoMessage添加到当前消息中
+func (m *CryoMessage) Add(msg CryoMessage) *CryoMessage {
+	// 将CryoMessage添加到当前消息中
+	m.Elements = append(m.Elements, msg.Elements...)
+	return m // 返回当前消息对象，以便链式调用
+}
+
 func (m *CryoMessage) ToIMessageElements() []lagrangeMessage.IMessageElement {
 	m.Check() // 检查消息元素的合法性
 

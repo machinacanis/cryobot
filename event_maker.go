@@ -8,7 +8,7 @@ import (
 func SendBotConnectedEvent(cc *CryoClient) {
 	botClientCount += 1
 	PublishAsync(BotConnectedEvent{
-		CryoBaseEvent: CryoBaseEvent{
+		BaseEvent: BaseEvent{
 			EventType:   uint32(BotConnectedEventType),
 			EventId:     uuid.NewV4().String(),
 			EventTags:   []string{"system", "bot"},
@@ -27,7 +27,7 @@ func SendBotConnectedEvent(cc *CryoClient) {
 func SendBotDisconnectedEvent(cc *CryoClient) {
 	botClientCount -= 1
 	PublishAsync(BotDisconnectedEvent{
-		CryoBaseEvent: CryoBaseEvent{
+		BaseEvent: BaseEvent{
 			EventType:   uint32(BotDisconnectedEventType),
 			EventId:     uuid.NewV4().String(),
 			EventTags:   []string{"system", "bot"},

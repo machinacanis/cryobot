@@ -7,11 +7,13 @@ import (
 )
 
 type Bot struct {
-	initFlag         bool          // 是否初始化完成
-	ConnectedClients []*CryoClient // 已连接的bot客户端列表
+	initFlag         bool                   // 是否初始化完成
+	ConnectedClients map[string]*CryoClient // 已连接的Bot客户端集合
 }
 
 // NewBot 创建一个新的CryoBot实例
+//
+// 非常不推荐同时创建多个Bot实例，因为事件总线是全局的，如果你实在要这么做那么请确保你知道自己在做什么
 func NewBot() *Bot {
 	return &Bot{}
 }
@@ -69,6 +71,8 @@ func (b *Bot) Init(c ...Config) {
 	fmt.Print(logo)
 	Infof("%s[Cryo] 🧊cryobot 正在初始化...", lavender)
 	Bus = NewEventBus() // 初始化事件总线
+	// 初始化连接的客户端集合
+	b.ConnectedClients = make(map[string]*CryoClient)
 	// 设置连接打印中间件
 	setConnectPrintMiddleware()
 	// 设置消息打印中间件
@@ -123,7 +127,7 @@ func (b *Bot) ConnectSavedClient(info CryoClientInfo) bool {
 	if !c.SignatureLogin() {
 		return false
 	}
-	b.ConnectedClients = append(b.ConnectedClients, c)
+	b.ConnectedClients[c.Id] = c
 	return true
 }
 
@@ -135,7 +139,7 @@ func (b *Bot) ConnectNewClient() bool {
 	if !c.QRCodeLogin() {
 		return false
 	}
-	b.ConnectedClients = append(b.ConnectedClients, c)
+	b.ConnectedClients[c.Id] = c
 	return true
 }
 
@@ -159,38 +163,45 @@ func (b *Bot) ConnectAllSavedClient() {
 	}
 }
 
-// On 创建一个空的事件处理器
-func (b *Bot) On() *Handler {
-	return &Handler{}
+// GetClientById 获取指定ID的bot客户端
+func (b *Bot) GetClientById(id string) *CryoClient {
+	if client, ok := b.ConnectedClients[id]; ok {
+		return client
+	}
+	return nil
 }
 
-// OnType 创建一个可以匹配类型的事件处理器
-func (b *Bot) OnType(eventType ...CryoEventType) *Handler {
-	return &Handler{
-		MatchingTypes: eventType, // 事件类型
-	}
-}
-
-// OnMessage 创建一个消息事件处理器
-func (b *Bot) OnMessage(eventType ...CryoEventType) *Handler {
-	messageEventTypes := []CryoEventType{
-		PrivateMessageEventType,
-		GroupMessageEventType,
-		TempMessageEventType,
-	}
-	if len(eventType) == 0 {
-		eventType = messageEventTypes
-	} else if len(eventType) > 0 {
-		// 如果传入的事件类型不在消息事件类型列表中，则返回默认的消息事件处理器
-		for _, et := range eventType {
-			if !Contains(messageEventTypes, et) {
-				eventType = messageEventTypes
-				break
-			}
+// GetClientByUin 获取指定Uin的bot客户端
+func (b *Bot) GetClientByUin(uin int) *CryoClient {
+	for _, client := range b.ConnectedClients {
+		if client.Uin == uin {
+			return client
 		}
+	}
+	return nil
+}
 
+// GetClientByUid 获取指定Uid的bot客户端
+func (b *Bot) GetClientByUid(uid string) *CryoClient {
+	for _, client := range b.ConnectedClients {
+		if client.Uid == uid {
+			return client
+		}
 	}
-	return &Handler{
-		MatchingTypes: eventType, // 事件类型
-	}
+	return nil
+}
+
+// GetClient 获取指定事件对应的bot客户端
+func (b *Bot) GetClient(event CryoEvent) *CryoClient {
+	return b.GetClientById(event.GetBaseEvent().BotId)
+}
+
+func (b *Bot) Send(event CryoMessageEvent, args ...interface{}) (ok bool, messageId uint32) {
+	// 根据事件获取对应的bot客户端
+	return b.GetClient(event).Send(event, args...)
+}
+
+func (b *Bot) Reply(event CryoMessageEvent, args ...interface{}) (ok bool, messageId uint32) {
+	// 根据事件获取对应的bot客户端
+	return b.GetClient(event).Reply(event, args...)
 }

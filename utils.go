@@ -93,3 +93,34 @@ func Contains[T string | uint32 | int | CryoEventType](slice []T, item T) bool {
 	}
 	return false
 }
+
+// ProcessMessageContent 处理消息内容
+func ProcessMessageContent(args ...interface{}) *CryoMessage {
+	result := BuildMessage() // 创建一个新的消息对象
+	for _, arg := range args {
+		// 遍历参数并根据其类型进行处理
+		switch v := arg.(type) {
+		case string:
+			// 如果参数是字符串，则将其添加到消息元素中
+			result.Text(v)
+		case int:
+			result.Text(strconv.Itoa(v))
+		case int8:
+			result.Text(strconv.FormatInt(int64(v), 10))
+		case int16:
+			result.Text(strconv.FormatInt(int64(v), 10))
+		case int32:
+			result.Text(strconv.FormatInt(int64(v), 10))
+		case int64:
+			result.Text(strconv.FormatInt(v, 10))
+		case uint32:
+			result.Text(strconv.FormatUint(uint64(v), 10))
+		case uint64:
+			result.Text(strconv.FormatUint(v, 10))
+		case CryoMessage:
+			// 如果参数是CryoMessage，则将其添加到消息元素中
+			result.Add(v)
+		}
+	}
+	return result
+}
